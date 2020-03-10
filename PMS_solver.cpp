@@ -45,18 +45,19 @@ public:
     // for each clauses, if the variable n is of positive polarity, then 2n is
     // stored if the variable n is of negative polarity, then 2n+1 is stored here,
     // n is assumed to be zero indexed
-    vector<vector<int> > hard_clauses;
-    vector<vector<int> > soft_clauses;
+    // clauses[0] - hard clauses
+    // clauses[1] - soft clauses
+    vector<vector<int> > clauses[2];
 
     Formula() {}
 
     // copy constructor for copying a formula - each member is copied over
     Formula(const Formula &f) {
-		literals = f.literals;
-		hard_clauses = f.hard_clauses;
-		soft_clauses = f.soft_clauses;
-		literal_frequency = f.literal_frequency;
-		literal_polarity = f.literal_polarity;
+        literals = f.literals;
+        clauses[0] = f.clauses[0];
+        clauses[1] = f.clauses[1];
+        literal_frequency = f.literal_frequency;
+        literal_polarity = f.literal_polarity;
     }
 
 	// set the vectors to their appropriate sizes and initial values
@@ -64,11 +65,11 @@ public:
         literals.clear();					// vector for literal
         literals.resize(literal_count, -1);
      
-        hard_clauses.clear();				// vector for hard clauses
-        hard_clauses.resize(hard_clause_count);
+        clauses[0].clear();				    // vector for hard clauses
+        clauses[0].resize(hard_clause_count);
         
-        soft_clauses.clear();				// vector for soft clauses
-        soft_clauses.resize(soft_clause_count);
+        clauses[1].clear();				    // vector for soft clauses
+        clauses[1].resize(soft_clause_count);
      
         literal_frequency.clear();
         literal_frequency.resize(literal_count, 0);
@@ -80,45 +81,28 @@ public:
 	// set the literate over the clauses
 	void input(int hard_clause_count, int soft_clause_count){
         int literal; // store the incoming literal value
-        // input hard clauses
-        for (int i = 0; i < hard_clause_count; i++) {
-            while (true) { // while the ith clause gets more literals
-                cin >> literal;
-                if (literal > 0) { // if the variable has positive polarity
-                    // store it in the form 2n
-                    hard_clauses[i].push_back(2 * (literal - 1));
-                    // increment frequency and polarity of the literal
-                    literal_frequency[literal - 1]++;
-                    literal_polarity[literal - 1]++;
-                } else if (literal < 0) { // if the variable has negative polarity
-                    // store it in the form 2n+1
-                    hard_clauses[i].push_back(2 * ((-1) * literal - 1) + 1);
-                    // increment frequency and decrement polarity of the literal
-                    literal_frequency[-1 - literal]++;
-                    literal_polarity[-1 - literal]--;
-                } else {
-                    break; // read 0, so move to next clause
-                }
-            }
-        }
-        // input soft clauses
-        for (int i = 0; i < soft_clause_count; i++) {
-            while (true) { // while the ith clause gets more literals
-                cin >> literal;
-                if (literal > 0) { // if the variable has positive polarity
-                    // store it in the form 2n
-                    soft_clauses[i].push_back(2 * (literal - 1));
-                    // increment frequency and polarity of the literal
-                    literal_frequency[literal - 1]++;
-                    literal_polarity[literal - 1]++;
-                } else if (literal < 0) { // if the variable has negative polarity
-                    // store it in the form 2n+1
-                    soft_clauses[i].push_back(2 * ((-1) * literal - 1) + 1);
-                    // increment frequency and decrement polarity of the literal
-                    literal_frequency[-1 - literal]++;
-                    literal_polarity[-1 - literal]--;
-                } else {
-                    break; // read 0, so move to next clause
+        // a array that store clause count  
+        // 0 - hard clause 1 - soft clause
+        int count[2] = {hard_clause_count, soft_clause_count}; 
+        for (int p = 0; p < 2; p++) { // point for hard or soft clause
+            for (int i = 0; i < count[p]; i++) {
+                while (true) { // while the ith clause gets more literals
+                    cin >> literal;
+                    if (literal > 0) { // if the variable has positive polarity
+                        // store it in the form 2n
+                        clauses[p][i].push_back(2 * (literal - 1));
+                        // increment frequency and polarity of the literal
+                        literal_frequency[literal - 1]++;
+                        literal_polarity[literal - 1]++;
+                    } else if (literal < 0) { // if the variable has negative polarity
+                        // store it in the form 2n+1
+                        clauses[p][i].push_back(2 * ((-1) * literal - 1) + 1);
+                        // increment frequency and decrement polarity of the literal
+                        literal_frequency[-1 - literal]++;
+                        literal_polarity[-1 - literal]--;
+                    } else {
+                        break; // read 0, so move to next clause
+                    }
                 }
             }
         }
@@ -186,7 +170,7 @@ int PMSATSolver::unit_propagate(Formula &f) {
     cout << "Propagate:" << endl;
     // stores whether the current iteration found a unit clause
     bool unit_clause_found = false; 
-    if (f.hard_clauses.size() == 0 && f.soft_clauses.size() == 0) {	
+    if (f.clauses[0].size() == 0 && f.clauses[1].size() == 0) {	
         // if the formula contains no clauses
         return Cat::satisfied;		// it is vacuously satisfied
     }
@@ -194,50 +178,31 @@ int PMSATSolver::unit_propagate(Formula &f) {
     do {
         unit_clause_found = false;
         // iterate over the hard clauses in f
-        for (int i = 0; i < f.hard_clauses.size(); i++) {
-            // if the size of a clause is 1, it is a unit clause
-            if (f.hard_clauses[i].size() == 1) { 
-                unit_clause_found = true;
-                // 0 - if true, 1 - if false, set the literal
-                f.literals[f.hard_clauses[i][0] / 2] = f.hard_clauses[i][0] % 2; 
-                // once assigned, reset the frequency to mark it closed
-                f.literal_frequency[f.hard_clauses[i][0] / 2] = -1; 
-                // apply this change through f
-                int result = apply_transform(f, f.hard_clauses[i][0] / 2); 
-                // if this caused the formula to be either satisfied or unsatisfied,
-                // return the result flag
-                if (result == Cat::satisfied || result == Cat::unsatisfied) {
-                    return result;
+        for(int p = 0; p < 2; p++){
+            for (int i = 0; i < f.clauses[p].size(); i++) {
+                // if the size of a clause is 1, it is a unit clause
+                if (f.clauses[p][i].size() == 1) { 
+                    unit_clause_found = true;
+                    // 0 - if true, 1 - if false, set the literal
+                    f.literals[f.clauses[p][i][0] / 2] = f.clauses[p][i][0] % 2; 
+                    // once assigned, reset the frequency to mark it closed
+                    f.literal_frequency[f.clauses[p][i][0] / 2] = -1; 
+                    // apply this change through f
+                    int result = apply_transform(f, f.clauses[p][i][0] / 2); 
+                    // if this caused the formula to be either satisfied 
+                    // or unsatisfied, return the result flag
+                    if (result == Cat::satisfied || result == Cat::unsatisfied) {
+                        return result;
+                    }
+                    break; // check for another unit clause from start
+                } else if (f.clauses[p][i].size() == 0) { 
+                    // if a given clause is empty
+                    return Cat::unsatisfied; // unsatisfiable in this branch
                 }
-                break; // exit the loop to check for another unit clause from start
-            } else if (f.hard_clauses[i].size() == 0) { // if a given clause is empty
-                return Cat::unsatisfied; // formula is unsatisfiable in this branch
-            }
-        } 
-        // continue do-whiile loop to check for another unit clause from start
-        if(unit_clause_found) continue;
-        // iterate over the soft clauses in f
-        for (int i = 0; i < f.soft_clauses.size(); i++) {
-            // if the size of a clause is 1, it is a unit clause
-            if (f.soft_clauses[i].size() == 1) { 
-                unit_clause_found = true;
-                // 0 - if true, 1 - if false, set the literal
-                f.literals[f.soft_clauses[i][0] / 2] = f.soft_clauses[i][0] % 2; 
-                // once assigned, reset the frequency to mark it closed
-                f.literal_frequency[f.soft_clauses[i][0] / 2] = -1; 
-                // apply this change through f
-                int result = apply_transform(f, f.soft_clauses[i][0] / 2); 
-                // if this caused the formula to be either satisfied or unsatisfied,
-                // return the result flag
-                if (result == Cat::satisfied || result == Cat::unsatisfied) {
-                    return result;
-                }
-                break; // exit the loop to check for another unit clause from start
-            } else if (f.soft_clauses[i].size() == 0) { // if a given clause is empty
-                return Cat::unsatisfied; // formula is unsatisfiable in this branch
-            }
-        } 
-
+            } 
+            // continue do-whiile loop to check for another unit clause from start
+            if(unit_clause_found) break;
+        }
     } while (unit_clause_found);
 
     return Cat::normal; // if reached here, the unit resolution ended normally
@@ -257,65 +222,35 @@ int PMSATSolver::apply_transform(Formula &f, int literal_to_apply) {
     int value_to_apply = f.literals[literal_to_apply]; 
     cout << "Apply: " << literal_to_apply << " with " << value_to_apply <<  endl;
     
-    // iterate over the hard clauses in f
-    for (int i = 0; i < f.hard_clauses.size(); i++) {
-        // iterate over the variables in the clause
-        for (int j = 0; j < f.hard_clauses[i].size(); j++) {
-            // if this is true, then the literal appears with the same polarity as it
-            // is being applied that is, if assigned true, it appears positive if
-            // assigned false, it appears negative, in this clause hence, the clause
-            // has now become true
-            if ((2 * literal_to_apply + value_to_apply) == f.hard_clauses[i][j]) {
-                // remove the clause from the list
-                f.hard_clauses.erase(f.hard_clauses.begin() + i); 
-                i--;                // reset iterator
-                // if all hard clauses have been removed, the formula is satisfied
-                if (f.hard_clauses.size() == 0) { 
-                    return Cat::satisfied;
+    for (int p = 0; p < 2; p++) {
+        // iterate over the hard clauses in f
+        for (int i = 0; i < f.clauses[p].size(); i++) {
+            // iterate over the variables in the clause
+            for (int j = 0; j < f.clauses[p][i].size(); j++) {
+                // if this is true, then the literal appears with the same polarity 
+                // as it is being applied that is, if assigned true, it appears 
+                // positive if assigned false, it appears negative, in this clause 
+                // hence, the clause has now become true
+                if ((2 * literal_to_apply + value_to_apply) == f.clauses[p][i][j]) {
+                    // remove the clause from the list
+                    f.clauses[p].erase(f.clauses[p].begin() + i); 
+                    i--;                // reset iterator
+                    // if all hard clauses have been removed, the formula is satisfied
+                    if (f.clauses[p].size() == 0) { 
+                        return Cat::satisfied;
+                    }
+                    break; // move to the next clause
+                } else if (f.clauses[p][i][j] / 2 == literal_to_apply) { 
+                    // the literal appears with opposite polarity 
+                    // remove the literal from the clause, as it is false in it
+                    f.clauses[p][i].erase(f.clauses[p][i].begin() + j); 
+                    j--;    // reset the iterator
+                    if (f.clauses[p][i].size() == 0) { 
+                        // if the clause is empty, formula is unsatisfiable currently
+                        return Cat::unsatisfied;
+                    }
+                    break; // move to the next clause
                 }
-                break; // move to the next clause
-            } else if (f.hard_clauses[i][j] / 2 == literal_to_apply) { 
-                // the literal appears with opposite polarity
-                
-                // remove the literal from the clause, as it is false in it
-                f.hard_clauses[i].erase(f.hard_clauses[i].begin() + j); 
-                j--;    // reset the iterator
-                if (f.hard_clauses[i].size() == 0) { 
-                    // if the clause is empty, the formula is unsatisfiable currently
-                    return Cat::unsatisfied;
-                }
-                break; // move to the next clause
-            }
-        }
-    }
-    // iterate over the soft clauses in f
-    for (int i = 0; i < f.soft_clauses.size(); i++) {
-        // iterate over the variables in the clause
-        for (int j = 0; j < f.soft_clauses[i].size(); j++) {
-            // if this is true, then the literal appears with the same polarity as it
-            // is being applied that is, if assigned true, it appears positive if
-            // assigned false, it appears negative, in this clause hence, the clause
-            // has now become true
-            if ((2 * literal_to_apply + value_to_apply) == f.soft_clauses[i][j]) {
-                // remove the clause from the list
-                f.soft_clauses.erase(f.soft_clauses.begin() + i); 
-                i--;                // reset iterator
-                // if all soft clauses have been removed, the formula is satisfied
-                if (f.soft_clauses.size() == 0) { 
-                    return Cat::satisfied;
-                }
-                break; // move to the next clause
-            } else if (f.soft_clauses[i][j] / 2 == literal_to_apply) { 
-                // the literal appears with opposite polarity
-                
-                // remove the literal from the clause, as it is false in it
-                f.soft_clauses[i].erase(f.soft_clauses[i].begin() + j); 
-                j--;    // reset the iterator
-                if (f.soft_clauses[i].size() == 0) { 
-                    // if the clause is empty, the formula is unsatisfiable currently
-                    return Cat::unsatisfied;
-                }
-                break; // move to the next clause
             }
         }
     }
@@ -414,10 +349,6 @@ void PMSATSolver::display(Formula &f, int result) {
  *               inf - no satisfiable solution
  */
 int PMSAT_BB(Formula formula, int upper_bound){
-    
-    if(formula.hard_clauses.size() == 0) {  //hard clauses is satisfiable
-        
-    }
     
 }
 
