@@ -422,8 +422,8 @@ int PMSAT_BB(Formula formula, int upper_bound){
 }
 
 void PMSATSolver::solve(){
-    // int result = DPLL(hard_formula);
-    // cout << "result: " << result << endl;
+    int result = DPLL(formula);
+    cout << "result: " << result << endl;
 }
 
 int main() {
