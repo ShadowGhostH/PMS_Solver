@@ -1,0 +1,8 @@
+c 3 variables, 6 hard clauses, 0 soft clauses
+p cnf 3 6 0
+1 2 0
+1 -2 0
+3 2 0
+-3 1 0
+1 2 3 0
+-1 -2 0
