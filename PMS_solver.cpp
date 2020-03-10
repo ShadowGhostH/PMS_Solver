@@ -270,7 +270,7 @@ int PMSATSolver::apply_transform(Formula &f, int literal_to_apply) {
                 f.hard_clauses.erase(f.hard_clauses.begin() + i); 
                 i--;                // reset iterator
                 // if all hard clauses have been removed, the formula is satisfied
-                if (f.clauses.size() == 0) { 
+                if (f.hard_clauses.size() == 0) { 
                     return Cat::satisfied;
                 }
                 break; // move to the next clause
@@ -301,7 +301,7 @@ int PMSATSolver::apply_transform(Formula &f, int literal_to_apply) {
                 f.soft_clauses.erase(f.soft_clauses.begin() + i); 
                 i--;                // reset iterator
                 // if all soft clauses have been removed, the formula is satisfied
-                if (f.clauses.size() == 0) { 
+                if (f.soft_clauses.size() == 0) { 
                     return Cat::satisfied;
                 }
                 break; // move to the next clause
@@ -422,9 +422,8 @@ int PMSAT_BB(Formula formula, int upper_bound){
 }
 
 void PMSATSolver::solve(){
-    int result = DPLL(hard_formula);
-
-    cout << "result: " << result << endl;
+    // int result = DPLL(hard_formula);
+    // cout << "result: " << result << endl;
 }
 
 int main() {
