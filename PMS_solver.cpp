@@ -278,68 +278,6 @@ int PMSATSolver::apply_transform(Formula &f, int literal_to_apply) {
     return Cat::normal;
 }
 
-/*
- * function to perform the recursive DPLL on a given formula
- * argument: f - the formula to perform DPLL on
- * return value: int - the return status flag, a member of the Cat enum
- *               Cat::normal - exited normally
- *               Cat::completed - result has been found, exit recursion all the way
- */
-int PMSATSolver::DPLL(Formula f) {
-    cout<< "DPLL:" << endl;
-    int result = unit_propagate(f); // perform unit propagation on the formula
-    cout << "unit propagate result in DPLL: " << result << endl;
-    if (result == Cat::satisfied) { // if formula satisfied, show result and return
-        // display(f, result);
-        return Cat::completed;
-    } else if (result == Cat::unsatisfied) { 
-        // if formula not satisfied in this branch, return normally
-        return Cat::normal;
-    }
-    // find the variable with maximum frequency in f, which will be the next to be
-    // assigned a value already assigned variables have this field reset to -1 in
-    // order to ignore them
-    int i = distance(f.literal_frequency.begin(), 
-            max_element(f.literal_frequency.begin(), f.literal_frequency.end()));
-    cout << "distance in DPLL: " << i << endl;
-
-    // need to apply twice, once true, the other false
-    for (int j = 0; j < 2; j++) {
-        Formula new_f = f; // copy the formula before recursing
-        if (new_f.literal_polarity[i] > 0) { 
-            // if the number of literals with positive polarity are greater
-            new_f.literals[i] = j;  // assign positive first
-        } else {                    // if not
-            new_f.literals[i] = (j + 1) % 2; // assign negative first
-        }
-        new_f.literal_frequency[i] = -1; 
-        // reset the frequency to -1 to ignore in the future
-        int transform_result = apply_transform(new_f, i); 
-        cout << "transform result in DPLL " << result << " with " << j << endl;
-        // apply the change to all the clauses
-        if (transform_result == Cat::satisfied) { 
-            // if formula satisfied, show result and return
-            // display(new_f, transform_result);
-            return Cat::completed;
-        } else if (transform_result == Cat::unsatisfied) { 
-            // if formula not satisfied in this branch, return normally
-            continue;
-        }
-        int dpll_result = DPLL(new_f); // recursively call DPLL on the new formula
-        if (dpll_result == Cat::completed) { // propagate the result, if completed
-            return dpll_result;
-        }
-    }
-    // if the control reaches here, the function has returned normally
-    return Cat::normal;
-}
-
-/*
- * function to display the result of the solver
- * arguments: f - the formula when it was satisfied or shown to be unsatisfiable
- *            result - the result flag, a member of the Cat enum
- *            ans - the answer of PMSAT
- */
 void PMSATSolver::display(Formula &f, int result, int ans) {
     cout << endl << "******** display ***********" << endl;
     if (result == Cat::satisfied) { // if the formula is satisfiable
