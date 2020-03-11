@@ -176,7 +176,6 @@ void PMSATSolver::initialize() {
  *                 Cat::normal - normal exit
  */
 int PMSATSolver::unit_propagate(Formula &f) {
-    cout << "*** unit progate:" << endl;
     // stores whether the current iteration found a unit clause
     bool unit_clause_found = false; 
     if (f.clauses[0].size() == 0 && f.clauses[1].size() == 0) {	
@@ -190,8 +189,6 @@ int PMSATSolver::unit_propagate(Formula &f) {
         for (int i = 0; i < f.clauses[0].size(); i++) {
             // if the size of a clause is 1, it is a unit clause
             if (f.clauses[0][i].size() == 1) { 
-                cout << "unit hard clause select: " << f.clauses[0][i][0] / 2
-                    << " with the value: " << f.clauses[0][i][0] % 2 << endl;
                 unit_clause_found = true;
                 // 0 - if true, 1 - if false, set the literal
                 f.literals[f.clauses[0][i][0] / 2] = f.clauses[0][i][0] % 2; 
@@ -231,7 +228,6 @@ int PMSATSolver::apply_transform(Formula &f, int literal_to_apply) {
     // the value to apply, 0 - if true, 1 - if false
     int value_to_apply = f.literals[literal_to_apply]; 
 
-    cout << "Apply: " << literal_to_apply << " with " << value_to_apply << endl;
 
     for (int p = 0; p < 2; p++) {
         // iterate over the hard clauses in f
@@ -312,9 +308,7 @@ void PMSATSolver::display(Formula &f, int result, int ans) {
  *               inf - no satisfiable solution
  */
 int PMSATSolver::PMSAT(Formula f){
-    cout << "### PMSAT: " <<endl;
     int result = unit_propagate(f); // perform unit propagation on the formula
-    cout << "unit propagate end" << endl;
     
     // lower bound is number of empty soft clauses in formula
     // int lower_bound = soft_clause_count - f.clauses[1].size() - f.remove_count; 
