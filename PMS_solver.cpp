@@ -133,7 +133,7 @@ private:
 	int DPLL(Formula);				// performs DPLL recursively
 	int apply_transform(Formula &, int);// applies the value of the literal
 	void display(Formula &, int, int);	// display the result
-    int PMSAT(Formula, int);        // performs branch and bound methods recursively
+    int PMSAT(Formula);        // performs branch and bound methods recursively
 
 public:
 	PMSATSolver() {}
@@ -311,20 +311,23 @@ void PMSATSolver::display(Formula &f, int result, int ans) {
  * return value: int - value of optimal complete solution
  *               inf - no satisfiable solution
  */
-int PMSATSolver::PMSAT(Formula f, int upper_bound){
+int PMSATSolver::PMSAT(Formula f){
     cout << "### PMSAT: " <<endl;
     int result = unit_propagate(f); // perform unit propagation on the formula
     cout << "unit propagate end" << endl;
     
     // lower bound is number of empty soft clauses in formula
-    int lower_bound = soft_clause_count - f.clauses[1].size() - f.remove_count; 
-    if (lower_bound >= upper_bound) return upper_bound;
+    // int lower_bound = soft_clause_count - f.clauses[1].size() - f.remove_count; 
+    // if (lower_bound >= upper_bound) return upper_bound;
+    
+    // to store empty soft clause number
+    int ans = soft_clause_count - f.clauses[1].size() - f.remove_count;
     
     if(result == Cat::satisfied) {  // if satisfied, show result and return
-        display(f, result, lower_bound);
-        return lower_bound;         // answer is lower bound 
+        display(f, result, ans);
+        return ans;         // answer is lower bound 
     } else if(result == Cat::unsatisfied) { // if hard clauses not satisfied
-        return inf;                 // return inf
+        return -inf;                // return -inf
     }
     
     // find the variable with maximum frequency in f, which will be the next to be
@@ -339,30 +342,29 @@ int PMSATSolver::PMSAT(Formula f, int upper_bound){
         new_f.literal_frequency[i] = -1; 
         // reset the frequency to -1 to ignore in the future
         int transform_result = apply_transform(new_f, i); 
-        lower_bound = soft_clause_count - f.clauses[1].size() - f.remove_count;
+        int ret = soft_clause_count - new_f.clauses[1].size() - new_f.remove_count;
         // apply the change to all the clauses
         if (transform_result == Cat::satisfied) { 
             // if formula satisfied both hard and soft clause
             // meas all literal has been selected
-            display(new_f, transform_result, lower_bound);
-            upper_bound = min(upper_bound, lower_bound);
+            display(new_f, transform_result, ret);
+            ans = max(ans, ret);
         } else if (transform_result == Cat::unsatisfied) { 
             // if formula not satisfied in this branch, return inf 
-            upper_bound = min(upper_bound, inf); // just for completement
+            ans = max(ans, -inf); // just for completement
         } 
         else {
             // after apply, there is not either satisfied or unsatisfied
             // recursively call PMSAT on the new formula
             // to update upper_bound
-            upper_bound = min(upper_bound, PMSAT(new_f, upper_bound));
+            ans = max(ans, PMSAT(new_f));
         }
     }
-    return upper_bound;
+    return ans;
 }
 
 void PMSATSolver::solve(){
-    int upper_bound = inf;
-    int result = PMSAT(formula, upper_bound);
+    int result = PMSAT(formula);
     cout << "result: " << result << endl;
 }
 
