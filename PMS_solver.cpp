@@ -50,6 +50,11 @@ public:
     // clauses[1] - soft clauses
     vector<vector<int> > clauses[2];
 
+    // int to store the number of remove soft clauses in every branch
+    // if formula is satisified, compute the answer
+    // by soft_cluause_count - remove_count - clause[1].size() 
+    int remove_count;
+
     Formula() {}
 
     // copy constructor for copying a formula - each member is copied over
@@ -59,6 +64,7 @@ public:
         clauses[1] = f.clauses[1];
         literal_frequency = f.literal_frequency;
         literal_polarity = f.literal_polarity;
+        remove_count = f.remove_count;
     }
 
 	// set the vectors to their appropriate sizes and initial values
@@ -77,6 +83,8 @@ public:
      
         literal_polarity.clear();
         literal_polarity.resize(literal_count, 0);
+        
+        remove_count = 0;
 	}
 
 	// set the literate over the clauses
@@ -256,7 +264,7 @@ int PMSATSolver::apply_transform(Formula &f, int literal_to_apply) {
                          }  else {
                             // if the soft clause is empty, minus soft cluase count
                             // because we use cnt - size to compute PMS
-                            soft_clause_count--;
+                            f.remove_count++;
                             // remove the clause from list
                             f.clauses[p].erase(f.clauses[p].begin() + i);
                             i--;
@@ -309,7 +317,7 @@ int PMSATSolver::PMSAT(Formula f, int upper_bound){
     cout << "unit propagate end" << endl;
     
     // lower bound is number of empty soft clauses in formula
-    int lower_bound = soft_clause_count - f.clauses[1].size(); 
+    int lower_bound = soft_clause_count - f.clauses[1].size() - f.remove_count; 
     if (lower_bound >= upper_bound) return upper_bound;
     
     if(result == Cat::satisfied) {  // if satisfied, show result and return
@@ -331,7 +339,7 @@ int PMSATSolver::PMSAT(Formula f, int upper_bound){
         new_f.literal_frequency[i] = -1; 
         // reset the frequency to -1 to ignore in the future
         int transform_result = apply_transform(new_f, i); 
-        lower_bound = soft_clause_count - f.clauses[1].size();
+        lower_bound = soft_clause_count - f.clauses[1].size() - f.remove_count;
         // apply the change to all the clauses
         if (transform_result == Cat::satisfied) { 
             // if formula satisfied both hard and soft clause
