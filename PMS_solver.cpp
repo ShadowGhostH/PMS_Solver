@@ -1,5 +1,6 @@
 /* 
  * Program to implement a Patrial Max SAT solver
+ * branch and bound method
  */
 
 #include <iostream>
@@ -167,7 +168,6 @@ void PMSATSolver::initialize() {
  *                 Cat::normal - normal exit
  */
 int PMSATSolver::unit_propagate(Formula &f) {
-    cout << "Propagate:" << endl;
     // stores whether the current iteration found a unit clause
     bool unit_clause_found = false; 
     if (f.clauses[0].size() == 0 && f.clauses[1].size() == 0) {	
@@ -221,45 +221,35 @@ int PMSATSolver::unit_propagate(Formula &f) {
 int PMSATSolver::apply_transform(Formula &f, int literal_to_apply) {
     // the value to apply, 0 - if true, 1 - if false
     int value_to_apply = f.literals[literal_to_apply]; 
-    cout << "Apply: " << literal_to_apply << " with " << value_to_apply <<  endl;
-    
     for (int p = 0; p < 2; p++) {
         // iterate over the hard clauses in f
         for (int i = 0; i < f.clauses[p].size(); i++) {
             // iterate over the variables in the clause
             for (int j = 0; j < f.clauses[p][i].size(); j++) {
-                cout << "(p, i, j) = " << p << " " << i << " " << j 
-                     << "  cluase number: " << f.clauses[p].size() 
-                     << "  clause_i size: " << f.clauses[p][i].size() << endl; 
                 // if this is true, then the literal appears with the same polarity 
                 // as it is being applied that is, if assigned true, it appears 
                 // positive if assigned false, it appears negative, in this clause 
                 // hence, the clause has now become true
                 if ((2 * literal_to_apply + value_to_apply) == f.clauses[p][i][j]) {
-                    cout << "case1 : remove a clause" << endl;
                     // remove the clause from the list
                     f.clauses[p].erase(f.clauses[p].begin() + i); 
                     i--;                // reset iterator
                     // if all hard and soft clauses have been removed
                     if (f.clauses[0].size() == 0 && f.clauses[1].size() == 0 ) { 
-                        cout << "**** both hard and soft clause empty" << endl;
                         return Cat::satisfied;  // the formula is satisfied
                     }
                     break; // move to the next clause
                 } else if (f.clauses[p][i][j] / 2 == literal_to_apply) {
-                    cout << "case2 : remove a literal" << endl;
                     // the literal appears with opposite polarity 
                     // remove the literal from the clause, as it is false in it
                     f.clauses[p][i].erase(f.clauses[p][i].begin() + j); 
                     j--;    // reset the iterator
                     if (f.clauses[p][i].size() == 0) {
                         if(p == 0){
-                            cout << "**** hard clause empty" << endl;
                             // if the hard clause is empty
                             // formula is unsatisfiable currently
                             return Cat::unsatisfied;
                          }  else {
-                            cout << "#### soft clause empty" << endl;
                             // if the soft clause is empty, minus soft cluase count
                             // because we use cnt - size to compute PMS
                             soft_clause_count--;
@@ -273,7 +263,6 @@ int PMSATSolver::apply_transform(Formula &f, int literal_to_apply) {
             }
         }
     }
-    
     // if reached here, the function is exiting normally
     return Cat::normal;
 }
@@ -310,7 +299,6 @@ void PMSATSolver::display(Formula &f, int result, int ans) {
  *               inf - no satisfiable solution
  */
 int PMSATSolver::PMSAT(Formula f, int upper_bound){
-    cout << "PMSAT:" << endl; 
     int result = unit_propagate(f); // perform unit propagation on the formula
     
     // lower bound is number of empty soft clauses in formula
@@ -318,8 +306,6 @@ int PMSATSolver::PMSAT(Formula f, int upper_bound){
     if (lower_bound >= upper_bound) return upper_bound;
     
     if(result == Cat::satisfied) {  // if satisfied, show result and return
-        cout << "PMSAT satisfied case1: " << soft_clause_count << " " 
-            << f.clauses[1].size() << endl;
         display(f, result, lower_bound);
         return lower_bound;         // answer is lower bound 
     } else if(result == Cat::unsatisfied) { // if hard clauses not satisfied
@@ -331,7 +317,6 @@ int PMSATSolver::PMSAT(Formula f, int upper_bound){
     // order to ignore them
     int i = distance(f.literal_frequency.begin(), 
             max_element(f.literal_frequency.begin(), f.literal_frequency.end()));
-    cout << "variable with maximum frequency in PMSAT: " << i << endl;
     // need to apply twice, once true, the other false
     for (int j = 0; j < 2; j++) {
         Formula new_f = f; // copy the formula before recursing
@@ -357,7 +342,6 @@ int PMSATSolver::PMSAT(Formula f, int upper_bound){
             upper_bound = min(upper_bound, PMSAT(new_f, upper_bound));
         }
     }
-    cout << "PMSAT ret: " << upper_bound <<endl;
     return upper_bound;
 }
 
