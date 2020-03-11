@@ -252,7 +252,7 @@ int PMSATSolver::apply_transform(Formula &f, int literal_to_apply) {
                     f.clauses[p][i].erase(f.clauses[p][i].begin() + j); 
                     j--;    // reset the iterator
                     if (f.clauses[p][i].size() == 0) {
-                        if(p == 1){
+                        if(p == 0){
                             cout << "**** hard clause empty" << endl;
                             // if the hard clause is empty
                             // formula is unsatisfiable currently
@@ -370,8 +370,11 @@ int PMSATSolver::PMSAT(Formula f, int upper_bound){
     cout << "PMSAT:" << endl; 
     int result = unit_propagate(f); // perform unit propagation on the formula
     if(result == Cat::satisfied) {  // if satisfied, show result and return
-       // display(f, result);
-       return upper_bound;          // ?????
+        // display(f, result);
+        upper_bound = soft_clause_count - f.clauses[1].size();
+        cout << "PMSAT satisfied case1: " << soft_clause_count << " " 
+            << f.clauses[1].size() << endl;
+        return upper_bound;          // ?????
     } else if(result == Cat::unsatisfied) { // if hard clauses not satisfied
         return inf;                 // return inf
     }

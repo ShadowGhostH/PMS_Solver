@@ -1,0 +1,14 @@
+c 3 variables, 6 hard clauses, 3 soft clauses
+c in hard clauses 1-true 2-false 3-true
+c so it at most satisified 2soft clauses
+p cnf 3 6 3
+1 2 0
+1 -2 0
+3 2 0
+-3 1 0
+1 2 3 0
+-1 -2 0
+1 2 0
+2 -3 0
+-1 2 3 0
+
