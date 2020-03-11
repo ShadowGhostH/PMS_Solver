@@ -299,6 +299,7 @@ void PMSATSolver::display(Formula &f, int result, int ans) {
  * function to perform the branch and bound method on a given formula
  * argument: formula - the formula to perform branch and bound method on
  *           upper_bound - value of optimal complete solution initialized to inf
+ *           remove_count - value of soft clauses remove (unsatisified)
  * return value: int - value of optimal complete solution
  *               inf - no satisfiable solution
  */
