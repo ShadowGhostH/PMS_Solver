@@ -312,19 +312,20 @@ void PMSATSolver::display(Formula &f, int result, int ans) {
 int PMSATSolver::PMSAT(Formula f, int upper_bound){
     cout << "PMSAT:" << endl; 
     int result = unit_propagate(f); // perform unit propagation on the formula
+    
+    // lower bound is number of empty soft clauses in formula
+    int lower_bound = soft_clause_count - f.clauses[1].size(); 
+    if (lower_bound >= upper_bound) return upper_bound;
+    
     if(result == Cat::satisfied) {  // if satisfied, show result and return
-        upper_bound = soft_clause_count - f.clauses[1].size();
         cout << "PMSAT satisfied case1: " << soft_clause_count << " " 
             << f.clauses[1].size() << endl;
-        display(f, result, upper_bound);
-        return upper_bound;          // ?????
+        display(f, result, lower_bound);
+        return lower_bound;         // answer is lower bound 
     } else if(result == Cat::unsatisfied) { // if hard clauses not satisfied
         return inf;                 // return inf
     }
     
-    // lower bound is number of empty soft clauses in formula
-    int lower_bound = soft_clause_count - f.clauses[1].size();
-
     // find the variable with maximum frequency in f, which will be the next to be
     // assigned a value already assigned variables have this field reset to -1 in
     // order to ignore them
@@ -334,12 +335,7 @@ int PMSATSolver::PMSAT(Formula f, int upper_bound){
     // need to apply twice, once true, the other false
     for (int j = 0; j < 2; j++) {
         Formula new_f = f; // copy the formula before recursing
-        if (new_f.literal_polarity[i] > 0) { 
-            // if the number of literals with positive polarity are greater
-            new_f.literals[i] = j;  // assign positive first
-        } else {                    // if not
-            new_f.literals[i] = (j + 1) % 2; // assign negative first
-        }
+        new_f.literals[i] = j;  // assign positive first
         new_f.literal_frequency[i] = -1; 
         // reset the frequency to -1 to ignore in the future
         int transform_result = apply_transform(new_f, i); 
@@ -348,13 +344,14 @@ int PMSATSolver::PMSAT(Formula f, int upper_bound){
         if (transform_result == Cat::satisfied) { 
             // if formula satisfied both hard and soft clause
             // meas all literal has been selected
+            display(new_f, transform_result, lower_bound);
             upper_bound = min(upper_bound, lower_bound);
         } else if (transform_result == Cat::unsatisfied) { 
             // if formula not satisfied in this branch, return inf 
-            upper_bound = min(upper_bound, inf);
+            upper_bound = min(upper_bound, inf); // just for completement
         } 
         else {
-            // after apply, there is no satisfied or unsatisfied
+            // after apply, there is not either satisfied or unsatisfied
             // recursively call PMSAT on the new formula
             // to update upper_bound
             upper_bound = min(upper_bound, PMSAT(new_f, upper_bound));
