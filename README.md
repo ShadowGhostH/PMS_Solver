@@ -10,7 +10,7 @@ Program to implement a Patrial Max SAT solver
 
 **unsatisfied** - 用于表示在求解过程中，出现 hard clause 为 false 的情况，此时求解不应继续进行下去
 
-**normal** - 用于表示
+**normal** - 用于表示求解过程中正常的退出，即仍有子句未满足，无 hard clause 冲突
 
 ## Formula
 
