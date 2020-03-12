@@ -52,7 +52,7 @@ public:
 
     // int to store the number of remove soft clauses in every branch
     // if formula is satisified, compute the answer
-    // by soft_cluause_count - remove_count - clause[1].size() 
+    // by soft_clause_count - remove_count - clause[1].size() 
     int remove_count;
 
     Formula() {}
@@ -133,7 +133,7 @@ private:
 	int DPLL(Formula);				// performs DPLL recursively
 	int apply_transform(Formula &, int);// applies the value of the literal
 	void display(Formula &, int, int);	// display the result
-    int PMSAT(Formula);        // performs branch and bound methods recursively
+    int PMSAT(Formula, int);        // performs branch and bound methods recursively
 
 public:
 	PMSATSolver() {}
@@ -307,13 +307,14 @@ void PMSATSolver::display(Formula &f, int result, int ans) {
  * return value: int - value of optimal complete solution
  *               inf - no satisfiable solution
  */
-int PMSATSolver::PMSAT(Formula f){
-    int result = unit_propagate(f); // perform unit propagation on the formula
-    
-    // lower bound is number of empty soft clauses in formula
-    // int lower_bound = soft_clause_count - f.clauses[1].size() - f.remove_count; 
-    // if (lower_bound >= upper_bound) return upper_bound;
-    
+int PMSATSolver::PMSAT(Formula f, int lower_bound){
+    // purning process
+	// lower_bound is the optimalcomplete solution initialized to -inf
+	// upper_bound is number of empty clause in f at most
+    int upper_bound = soft_clause_count - f.remove_count;
+    if(upper_bound <= lower_bound) return lower_bound;
+   
+    int result = unit_propagate(f); // perform unit propagation on the formula 
     // to store empty soft clause number
     int ans = soft_clause_count - f.clauses[1].size() - f.remove_count;
     
@@ -351,14 +352,14 @@ int PMSATSolver::PMSAT(Formula f){
             // after apply, there is not either satisfied or unsatisfied
             // recursively call PMSAT on the new formula
             // to update upper_bound
-            ans = max(ans, PMSAT(new_f));
+            ans = max(ans, PMSAT(new_f, ans));
         }
     }
     return ans;
 }
 
 void PMSATSolver::solve(){
-    int result = PMSAT(formula);
+    int result = PMSAT(formula, -inf);
     cout << "result: " << result << endl;
 }
 
