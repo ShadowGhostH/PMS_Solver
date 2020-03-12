@@ -316,9 +316,9 @@ int PMSATSolver::PMSAT(Formula f, int lower_bound){
    
     int result = unit_propagate(f); // perform unit propagation on the formula 
     // to store empty soft clause number
-    int ans = soft_clause_count - f.clauses[1].size() - f.remove_count;
     
     if(result == Cat::satisfied) {  // if satisfied, show result and return
+        int ans = soft_clause_count - f.clauses[1].size() - f.remove_count;
         display(f, result, ans);
         return ans;         // answer is lower bound 
     } else if(result == Cat::unsatisfied) { // if hard clauses not satisfied
@@ -343,24 +343,25 @@ int PMSATSolver::PMSAT(Formula f, int lower_bound){
             // if formula satisfied both hard and soft clause
             // meas all literal has been selected
             display(new_f, transform_result, ret);
-            ans = max(ans, ret);
+            lower_bound = max(lower_bound, ret);
         } else if (transform_result == Cat::unsatisfied) { 
             // if formula not satisfied in this branch, return inf 
-            ans = max(ans, -inf); // just for completement
+            lower_bound = max(lower_bound, -inf); // just for completement
         } 
         else {
             // after apply, there is not either satisfied or unsatisfied
             // recursively call PMSAT on the new formula
             // to update upper_bound
-            ans = max(ans, PMSAT(new_f, ans));
+            lower_bound = max(lower_bound, PMSAT(new_f, lower_bound));
         }
     }
-    return ans;
+    return lower_bound;
 }
 
 void PMSATSolver::solve(){
     int result = PMSAT(formula, -inf);
-    cout << "result: " << result << endl;
+    if(result == -inf) cout << "UNSAT" << endl;
+    else cout << "PMS result: " << result << endl;
 }
 
 int main() {

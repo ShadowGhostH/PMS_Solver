@@ -1,0 +1,10 @@
+c 2 variables, 4 hard clauses, 2 soft clauses
+c hard clauses can't satisfied
+p cnf 2 4 2
+1 2 0
+1 -2 0
+-1 -2 0
+-1 2 0
+1 2 0
+2 -1 0
+
