@@ -19,9 +19,8 @@ enum Cat {
     satisfied,   // when a satisfying assignment has been found
     unsatisfied, // when no satisfying assignment has been found after
 			     // exhaustively searching
-    normal,		 // when no satisfying assignment has been found till now, and DPLL()
+    normal		 // when no satisfying assignment has been found till now, and DPLL()
 				 // has exited normally
-    completed	 // when the DPLL algorithm has completed execution
 };
 
 /*
