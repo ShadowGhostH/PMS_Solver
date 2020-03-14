@@ -49,10 +49,13 @@ public:
     // clauses[1] - soft clauses
     vector<vector<int> > clauses[2];
 
-    // int to store the number of remove soft clauses in every branch
-    // if formula is satisified, compute the answer
-    // by soft_clause_count - remove_count - clause[1].size() 
-    int remove_count;
+    // last version regarded the cost of each clause as 1
+    // In this version, we use soft_clause_cost to store the cost of each soft clause
+    vecrot<int > soft_clause_cost;
+
+    // int to sore the number of optimal soft clauses cost in every branch
+    // if formula is satisified
+    int opt_cost;
 
     Formula() {}
 
@@ -66,57 +69,63 @@ public:
         remove_count = f.remove_count;
     }
 
-	// set the vectors to their appropriate sizes and initial values
-	void initialize(int literal_count, int hard_clause_count, int soft_clause_count){
-        literals.clear();					// vector for literal
-        literals.resize(literal_count, -1);
-     
-        clauses[0].clear();				    // vector for hard clauses
-        clauses[0].resize(hard_clause_count);
-        
-        clauses[1].clear();				    // vector for soft clauses
-        clauses[1].resize(soft_clause_count);
-     
-        literal_frequency.clear();
-        literal_frequency.resize(literal_count, 0);
-     
-        literal_polarity.clear();
-        literal_polarity.resize(literal_count, 0);
-        
-        remove_count = 0;
-	}
+    // set the vectors to their appropriate sizes and initial values
+    void initialize(int, int, int);
+    
+    // set the literate over the clauses
+    void input(int, int);
+};
 
-	// set the literate over the clauses
-	void input(int hard_clause_count, int soft_clause_count){
-        int literal; // store the incoming literal value
-        // a array that store clause count  
-        // 0 - hard clause 1 - soft clause
-        int count[2] = {hard_clause_count, soft_clause_count}; 
-        for (int p = 0; p < 2; p++) { // point for hard or soft clause
-            for (int i = 0; i < count[p]; i++) {
-                while (true) { // while the ith clause gets more literals
-                    cin >> literal;
-                    if (literal > 0) { // if the variable has positive polarity
-                        // store it in the form 2n
-                        clauses[p][i].push_back(2 * (literal - 1));
-                        // increment frequency and polarity of the literal
-                        literal_frequency[literal - 1]++;
-                        literal_polarity[literal - 1]++;
-                    } else if (literal < 0) { // if the variable has negative polarity
-                        // store it in the form 2n+1
-                        clauses[p][i].push_back(2 * ((-1) * literal - 1) + 1);
-                        // increment frequency and decrement polarity of the literal
-                        literal_frequency[-1 - literal]++;
-                        literal_polarity[-1 - literal]--;
-                    } else {
-                        break; // read 0, so move to next clause
-                    }
+
+void Formula:: initialize(int literal_count, int hard_clause_count, 
+        int soft_clause_count){
+    literals.clear();					// vector for literal
+    literals.resize(literal_count, -1); 
+    
+    clauses[0].clear();				    // vector for hard clauses
+    clauses[0].resize(hard_clause_count);
+        
+    clauses[1].clear();				    // vector for soft clauses
+    clauses[1].resize(soft_clause_count);
+     
+    literal_frequency.clear();
+    literal_frequency.resize(literal_count, 0);
+     
+    literal_polarity.clear();
+    literal_polarity.resize(literal_count, 0);
+        
+    remove_count = 0;
+}
+
+void Formual::input(int hard_clause_count, int soft_clause_count){
+    int literal; // store the incoming literal value
+    // a array that store clause count  
+    // 0 - hard clause 1 - soft clause
+    int count[2] = {hard_clause_count, soft_clause_count}; 
+    for (int p = 0; p < 2; p++) { // point for hard or soft clause
+        for (int i = 0; i < count[p]; i++) {
+            while (true) { // while the ith clause gets more literals
+                cin >> literal;
+                if (literal > 0) { // if the variable has positive polarity
+                    // store it in the form 2n
+                    clauses[p][i].push_back(2 * (literal - 1));
+                    // increment frequency and polarity of the literal
+                    literal_frequency[literal - 1]++;
+                    literal_polarity[literal - 1]++;
+                } else if (literal < 0) { // if the variable has negative polarity
+                    // store it in the form 2n+1
+                    clauses[p][i].push_back(2 * ((-1) * literal - 1) + 1);
+                    // increment frequency and decrement polarity of the literal
+                    literal_frequency[-1 - literal]++;
+                    literal_polarity[-1 - literal]--;
+                } else {
+                     break; // read 0, so move to next clause
                 }
             }
         }
     }
+}
 
-};
 
 /*
  * class to represent the structure and functions of the SAT solver
