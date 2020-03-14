@@ -4,6 +4,7 @@ c in soft clauses if 3-true satisfied 2 clauses and 1 if 3-false
 c if 4-false satisfied 1 clauses and 2 if 4-fasle
 c display all satisified answers to check
 p cnf 4 3 6
+1 1 1 1 1 1
 1  2 0
 1 -2 0
 -1 -2 0

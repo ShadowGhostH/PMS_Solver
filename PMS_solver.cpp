@@ -51,11 +51,14 @@ public:
 
     // last version regarded the cost of each clause as 1
     // In this version, we use soft_clause_cost to store the cost of each soft clause
-    vecrot<int > soft_clause_cost;
+    vector<int> soft_clause_cost;
 
     // int to sore the number of optimal soft clauses cost in every branch
     // if formula is satisified
     int opt_cost;
+    
+    // int to store the num of sum of removed soft clauses cost
+    int remove_cost;
 
     Formula() {}
 
@@ -66,19 +69,22 @@ public:
         clauses[1] = f.clauses[1];
         literal_frequency = f.literal_frequency;
         literal_polarity = f.literal_polarity;
-        remove_count = f.remove_count;
+        soft_clause_cost = f.soft_clause_cost;
+        opt_cost = f.opt_cost;
+        remove_cost = f.remove_cost;
     }
 
     // set the vectors to their appropriate sizes and initial values
     void initialize(int, int, int);
     
     // set the literate over the clauses
-    void input(int, int);
+    void input(int, int, int &);
 };
 
 
 void Formula:: initialize(int literal_count, int hard_clause_count, 
         int soft_clause_count){
+    
     literals.clear();					// vector for literal
     literals.resize(literal_count, -1); 
     
@@ -93,15 +99,25 @@ void Formula:: initialize(int literal_count, int hard_clause_count,
      
     literal_polarity.clear();
     literal_polarity.resize(literal_count, 0);
-        
-    remove_count = 0;
+    
+    soft_clause_cost.clear();
+    soft_clause_cost.resize(soft_clause_count, 0);
+    
+    opt_cost = remove_cost = 0; 
 }
 
-void Formual::input(int hard_clause_count, int soft_clause_count){
+void Formula::input(int hard_clause_count, int soft_clause_count, int &sum_soft_cost){
     int literal; // store the incoming literal value
     // a array that store clause count  
     // 0 - hard clause 1 - soft clause
     int count[2] = {hard_clause_count, soft_clause_count}; 
+    sum_soft_cost = 0;
+    
+    for(int i = 0; i < soft_clause_count; i++){
+        cin >> soft_clause_cost[i];   // cost of each soft clause
+        sum_soft_cost += soft_clause_cost[i];
+    }
+    
     for (int p = 0; p < 2; p++) { // point for hard or soft clause
         for (int i = 0; i < count[p]; i++) {
             while (true) { // while the ith clause gets more literals
@@ -136,6 +152,7 @@ private:
 	Formula formula;			    // the initial hard and soft formula
 	int hard_clause_count;			// the number of hard clauses in the formula
 	int soft_clause_count;			// the number of soft clauses in the formula
+    int sum_soft_cost;              // the number of sum of soft clause in the formula
 	
 	int unit_propagate(Formula &);	// performs unit propagation
 	int DPLL(Formula);				// performs DPLL recursively
@@ -172,7 +189,7 @@ void PMSATSolver::initialize() {
 
 	formula.initialize(literal_count, hard_clause_count, soft_clause_count);
 	
-	formula.input(hard_clause_count, soft_clause_count);
+	formula.input(hard_clause_count, soft_clause_count, sum_soft_cost);
 }
 
 /*
@@ -235,8 +252,6 @@ int PMSATSolver::unit_propagate(Formula &f) {
 int PMSATSolver::apply_transform(Formula &f, int literal_to_apply) {
     // the value to apply, 0 - if true, 1 - if false
     int value_to_apply = f.literals[literal_to_apply]; 
-
-
     for (int p = 0; p < 2; p++) {
         // iterate over the hard clauses in f
         for (int i = 0; i < f.clauses[p].size(); i++) {
@@ -249,6 +264,12 @@ int PMSATSolver::apply_transform(Formula &f, int literal_to_apply) {
                 if ((2 * literal_to_apply + value_to_apply) == f.clauses[p][i][j]) {
                     // remove the clause from the list
                     f.clauses[p].erase(f.clauses[p].begin() + i); 
+                    if (p == 1){  // soft clause
+                        // add clause cost to opt_cost
+                        f.opt_cost += f.soft_clause_cost[i];
+                        // remove the clause cost from the list
+                        f.soft_clause_cost.erase(f.soft_clause_cost.begin() + i);
+                    }
                     i--;                // reset iterator
                     // if all hard and soft clauses have been removed
                     if (f.clauses[0].size() == 0 && f.clauses[1].size() == 0 ) { 
@@ -266,11 +287,12 @@ int PMSATSolver::apply_transform(Formula &f, int literal_to_apply) {
                             // formula is unsatisfiable currently
                             return Cat::unsatisfied;
                          }  else {
-                            // if the soft clause is empty, minus soft cluase count
-                            // because we use cnt - size to compute PMS
-                            f.remove_count++;
                             // remove the clause from list
                             f.clauses[p].erase(f.clauses[p].begin() + i);
+                            // add clause cost to remove cost
+                            f.remove_cost += f.soft_clause_cost[i];
+                            // remove the clause cost from the list
+                            f.soft_clause_cost.erase(f.soft_clause_cost.begin() + i);
                             i--;
                         }
                     }
@@ -310,8 +332,7 @@ void PMSATSolver::display(Formula &f, int result, int ans) {
 /* 
  * function to perform the branch and bound method on a given formula
  * argument: formula - the formula to perform branch and bound method on
- *           upper_bound - value of optimal complete solution initialized to inf
- *           remove_count - value of soft clauses remove (unsatisified)
+ *           lower_bound - value of optimal complete solution initialized to inf
  * return value: int - value of optimal complete solution
  *               inf - no satisfiable solution
  */
@@ -319,14 +340,14 @@ int PMSATSolver::PMSAT(Formula f, int lower_bound){
     // purning process
 	// lower_bound is the optimalcomplete solution initialized to -inf
 	// upper_bound is number of empty clause in f at most
-    int upper_bound = soft_clause_count - f.remove_count;
+    int upper_bound = sum_soft_cost - f.remove_cost;
     if(upper_bound <= lower_bound) return lower_bound;
    
     int result = unit_propagate(f); // perform unit propagation on the formula 
     // to store empty soft clause number
     
     if(result == Cat::satisfied) {  // if satisfied, show result and return
-        int ans = soft_clause_count - f.clauses[1].size() - f.remove_count;
+        int ans = f.opt_cost;
         display(f, result, ans);
         return ans;         // answer is lower bound 
     } else if(result == Cat::unsatisfied) { // if hard clauses not satisfied
@@ -345,7 +366,7 @@ int PMSATSolver::PMSAT(Formula f, int lower_bound){
         new_f.literal_frequency[i] = -1; 
         // reset the frequency to -1 to ignore in the future
         int transform_result = apply_transform(new_f, i); 
-        int ret = soft_clause_count - new_f.clauses[1].size() - new_f.remove_count;
+        int ret = new_f.opt_cost;
         // apply the change to all the clauses
         if (transform_result == Cat::satisfied) { 
             // if formula satisfied both hard and soft clause
